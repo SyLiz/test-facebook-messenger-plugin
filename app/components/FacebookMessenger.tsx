@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import Script from "next/script";
+import { useEffect, useState } from "react";
 
 // Extend Window interface for TypeScript
 declare global {
@@ -24,8 +23,63 @@ export default function FacebookMessenger({
   loggedInGreeting = "Hi! How can we help you?",
   loggedOutGreeting = "Hi! How can we help you?",
 }: FacebookMessengerProps) {
+  const [isLoaded, setIsLoaded] = useState(false);
+
   useEffect(() => {
     console.log("Facebook Messenger component mounted with page ID:", pageId);
+
+    // Set up Facebook SDK initialization
+    window.fbAsyncInit = function () {
+      console.log("Initializing Facebook SDK...");
+      window.FB.init({
+        xfbml: true,
+        version: "v19.0",
+      });
+      console.log("Facebook SDK initialized successfully");
+      setIsLoaded(true);
+    };
+
+    // Load the Facebook SDK script
+    const loadFacebookSDK = () => {
+      if (document.getElementById("facebook-jssdk")) {
+        console.log("Facebook SDK already exists");
+        return;
+      }
+
+      console.log("Loading Facebook SDK...");
+      const script = document.createElement("script");
+      script.id = "facebook-jssdk";
+      script.src = "https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js";
+      script.async = true;
+      script.defer = true;
+      script.crossOrigin = "anonymous";
+      
+      script.onload = () => {
+        console.log("Facebook SDK script loaded successfully");
+      };
+      
+      script.onerror = (error) => {
+        console.error("Failed to load Facebook SDK:", error);
+        console.error("Troubleshooting steps:");
+        console.error("1. Check if your domain is whitelisted in Facebook Page settings");
+        console.error("2. Verify the page ID is correct:", pageId);
+        console.error("3. Make sure you're not on localhost (use deployed URL)");
+        console.error("4. Check if Facebook is blocked by firewall/ad blocker");
+      };
+
+      const firstScript = document.getElementsByTagName("script")[0];
+      firstScript.parentNode?.insertBefore(script, firstScript);
+    };
+
+    loadFacebookSDK();
+
+    // Cleanup
+    return () => {
+      const script = document.getElementById("facebook-jssdk");
+      if (script) {
+        script.remove();
+      }
+    };
   }, [pageId]);
 
   return (
@@ -34,55 +88,17 @@ export default function FacebookMessenger({
       <div id="fb-root"></div>
 
       {/* Facebook Customer Chat Plugin */}
-      <div id="fb-customer-chat" className="fb-customerchat"></div>
-
-      {/* Facebook SDK Script */}
-      <Script
-        id="facebook-messenger-sdk"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            console.log("Loading Facebook Messenger SDK...");
-            
-            var chatbox = document.getElementById('fb-customer-chat');
-            if (chatbox) {
-              chatbox.setAttribute("page_id", "${pageId}");
-              chatbox.setAttribute("attribution", "biz_inbox");
-              chatbox.setAttribute("theme_color", "${themeColor}");
-              chatbox.setAttribute("logged_in_greeting", "${loggedInGreeting}");
-              chatbox.setAttribute("logged_out_greeting", "${loggedOutGreeting}");
-              console.log("Facebook Messenger chatbox configured");
-            }
-
-            window.fbAsyncInit = function() {
-              console.log("Initializing Facebook SDK...");
-              FB.init({
-                xfbml: true,
-                version: 'v18.0'
-              });
-              console.log("Facebook SDK initialized successfully");
-            };
-
-            (function(d, s, id) {
-              var js, fjs = d.getElementsByTagName(s)[0];
-              if (d.getElementById(id)) {
-                console.log("Facebook SDK already loaded");
-                return;
-              }
-              js = d.createElement(s); 
-              js.id = id;
-              js.src = 'https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js';
-              js.onload = function() {
-                console.log("Facebook SDK script loaded");
-              };
-              js.onerror = function() {
-                console.error("Failed to load Facebook SDK");
-              };
-              fjs.parentNode.insertBefore(js, fjs);
-            }(document, 'script', 'facebook-jssdk'));
-          `,
-        }}
-      />
+      <div
+        id="fb-customer-chat"
+        className="fb-customerchat"
+        {...({
+          page_id: pageId,
+          attribution: "biz_inbox",
+          theme_color: themeColor,
+          logged_in_greeting: loggedInGreeting,
+          logged_out_greeting: loggedOutGreeting,
+        } as any)}
+      ></div>
     </>
   );
 }
