@@ -31,20 +31,7 @@ export default function RootLayout({
         <div id="fb-root"></div>
         {children}
         
-        {/* Facebook SDK */}
-        <Script
-          id="facebook-jssdk"
-          strategy="afterInteractive"
-          src="https://connect.facebook.net/en_US/sdk/xfbml.customerchat.js"
-          crossOrigin="anonymous"
-          onLoad={() => {
-            console.log("Facebook SDK loaded from layout");
-          }}
-          onError={() => {
-            console.error("Failed to load Facebook SDK from layout");
-          }}
-        />
-        
+        {/* Facebook SDK Initialization */}
         <Script
           id="fb-init"
           strategy="afterInteractive"
@@ -53,11 +40,27 @@ export default function RootLayout({
               window.fbAsyncInit = function() {
                 FB.init({
                   xfbml: true,
-                  version: 'v19.0'
+                  version: 'v21.0'
                 });
-                console.log("Facebook SDK initialized from layout");
+                console.log("✅ Facebook SDK initialized successfully");
               };
             `,
+          }}
+        />
+        
+        {/* Facebook SDK Script */}
+        <Script
+          id="facebook-jssdk"
+          strategy="afterInteractive"
+          src="https://connect.facebook.net/en_US/sdk.js"
+          async
+          defer
+          crossOrigin="anonymous"
+          onLoad={() => {
+            console.log("✅ Facebook SDK loaded successfully");
+          }}
+          onError={(e) => {
+            console.error("❌ Failed to load Facebook SDK:", e);
           }}
         />
       </body>
